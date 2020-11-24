@@ -7,9 +7,9 @@
 %versions
 
 %decay constants in 1/yr
-lambda235=.00000000098485;
-lambda238=.000000000155125;
-lambda232=.000000000049475;
+lambda235=9.8485e-10;
+lambda238=1.55125e-10;
+lambda232=4.9475e-11;
 lambdaf=.0000000000000000846; %for Flowers et al. 2009 RDAAM
 lambdaD=.000000000155125; %for Flowers et al. 2009 RDAAM
 
@@ -36,6 +36,7 @@ L=0.000815; %cm, half the total etchable fission-track length
 %get file information, eventually I want to just make this into a dialog
 %box... tree structure?
 concen=input('Input phase and concentration file>');
+obs_data=input('Input measured data file (if none, enter 0)>');
 compType=input('Input 1 for running a model comparison test, 2 for grain size comparison>');
 NumGrains=0;
 isGuenthner=false;
@@ -63,9 +64,11 @@ if(compType==1)
     end
     plotType='model_comp';
 else
-    meanGrain=input('What is the mean grain size (in microns)?>');
+  if(obs_data~=0)
+    meanGrain=mean(obs_data(:,4));
+    stdGrain=std(obs_data(:,4));
+  end
     NumGrains=size(concen,1);
-    stdGrain=input('What is the standard deviation in grain size (in microns)? 0 if none>');
     if(stdGrain>0)
         NumGrains=NumGrains*3;
     end
@@ -73,7 +76,7 @@ else
     plotType='grain_size';
 end
 
-tempFile=input('Input time-temperature matrix>');
+temp_tT=input('Input time-temperature matrix>');
 tic
 
 data=cell(NumGrains,5);
@@ -81,11 +84,11 @@ if(NumGrains==size(concen,1))
     data(:,1)=concen(:,1);
     data(:,2)=concen(:,2);
     data(:,3)=concen(:,3);
-    data(:,4)={meanGrain};
+    data(:,4)=concen(:,4);%{meanGrain}; %concen(:,4);
   
-    if(isGinster || modelType==2)
+    if(isGinster)
         data(:,5)={'Ginster'};
-    elseif(isGuenthner || modelType==1)
+    elseif(isGuenthner)
         data(:,5)={'Guenthner'};
     else
         data(:,5)={'none'};
@@ -95,7 +98,7 @@ elseif(NumGrains==size(concen,1)*2)
     data(:,1)=[concen(:,1); concen(:,1)];
     data(:,2)=[concen(:,2); concen(:,2)];
     data(:,3)=[concen(:,3); concen(:,3)];
-    data(:,4)={meanGrain};
+    data(:,4)=[concen(:,4); concen(:,4)];%{meanGrain}; %[concen(:,4); concen(:,4)];
     
     if(isGinster && isGuenthner)
         data(1:size(concen,1),5)={'Guenthner'};
@@ -134,7 +137,7 @@ else
 end
 
 
-tTsize=size(tempFile,2);
+tTsize=size(temp_tT,2);
 howMany=(tTsize+1)/3;
 
 %set some variables and allocate space for matrices used throughout
@@ -145,27 +148,27 @@ masterIndex=1;
 
 for master=1:howMany
     if (master==1)
-        for index=2:size(tempFile,1)
-            if (tempFile(index,1)~=0)
+        for index=2:size(temp_tT,1)
+            if (temp_tT(index,1)~=0)
                 location=index;
             else
                 break
             end
         end
         tTInput=zeros(location,2);
-        tTInput(:,1)=tempFile(1:location,1);
-        tTInput(:,2)=tempFile(1:location,2);
+        tTInput(:,1)=temp_tT(1:location,1);
+        tTInput(:,2)=temp_tT(1:location,2);
     else
-        for index=2:size(tempFile,1)
-            if (tempFile(index,1+((master-1)*3))~=0)
+        for index=2:size(temp_tT,1)
+            if (temp_tT(index,1+((master-1)*3))~=0)
                 location=index;
             else
                 break
             end
         end
         tTInput=zeros(location,2);
-        tTInput(:,1)=tempFile(1:location,1+((master-1)*3));
-        tTInput(:,2)=tempFile(1:location,2+((master-1)*3));
+        tTInput(:,1)=temp_tT(1:location,1+((master-1)*3));
+        tTInput(:,2)=temp_tT(1:location,2+((master-1)*3));
     end
     
 %create tT path with tT path interpolater
@@ -175,6 +178,8 @@ steps=size(tT,1);
 alphai=zeros(steps,1);
 rhov=zeros(steps,1);
 diffusivities=zeros(steps,1);
+compareDiff=zeros(steps,NumGrains);
+compareDam=zeros(steps,NumGrains);
 
 %now calculate damage array, only need to do this once per tT path IF YOU 
 %SELECTED GUENTHNER OR FLOWERS and then calculate total damage within the 
@@ -207,7 +212,7 @@ end
 for i=1:NumGrains
     phase=data{i,1};
     annealModel=data{i,5};
-    Uppm=data{i,2};
+    Uppm=data{i,2};    
     Thppm=data{i,3};
     eU=Uppm+.235*Thppm;
     radius=data{i,4}; %microns
@@ -254,7 +259,7 @@ for i=1:NumGrains
                 end
             end
         end
-    
+    compareDam(:,i)=annealedDam;
         for j=1:steps-1
             temp=(tT(j,2)+273.15+tT(j+1,2)+273.15)/2;
             damage_amount=annealedDam(j,1); %atoms/g
@@ -306,7 +311,7 @@ for i=1:NumGrains
     else
         diffusivities(:,1)=NaN; %so you'll know if you screwed up
     end
-    
+    compareDiff(:,i)=diffusivities;
     %pass diffusivities to diffusion model 
     dateeU(i,1)=HeDiff(phase,radius,nodes,diffusivities,tT,U235atom,U238atom,Thatom);
     dateeU(i,2)=eU;
@@ -319,6 +324,6 @@ masterIndex=master*3+1;
 
 end
 
-[dateeU_fig,top,bottom,plotMatrix]=plotDateeU(masterDateeU,plotType,tempFile);
+[dateeU_fig,top,bottom,plotMatrix]=plotDateeU(masterDateeU,plotType,temp_tT,obs_data);
 
 toc

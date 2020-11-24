@@ -1,8 +1,8 @@
-function [heModelAge] = HeDiff(phase, radius, nodes, diffusivities, tT, U235atom, U238atom, Thatom)
-%Alpha ejection and He diffusion model. Requires phase (needed for proper 
-%alpha stopping distance), grain radius, number of nodes for CN algorithm, 
-%diffusivities, tT history, and atoms of U and Th isotopes. Calculates a 
-%He age from diffusion profile and returns. 
+function [heModelAge] = ZircDif(radius, nodes, diffusivities, tT, U235atom, U238atom, Thatom)
+%Alpha ejection and diffusion model for zircon (specific wrt alpha stopping
+%distances, but otherwise universal). Requires grain radius, number of
+%nodes for CN algorithm, diffusivities, tT history, and atoms of U and Th
+%isotopes. Calculates a He age from diffusion profile and returns. 
     
     %decay constants in 1/yr
     lambda235=.00000000098485;
@@ -14,23 +14,10 @@ function [heModelAge] = HeDiff(phase, radius, nodes, diffusivities, tT, U235atom
     aEj235=zeros(nodes,1);
     aEj232=zeros(nodes,1);
     
-    %alpha stopping distances in microns, from Hourigan et al., 2005 and
-    %Ketcham et al., 2011. NOTE: these distances are correction polynomial
-    %specific so if you're data is corrected using a different scheme, 
-    %there will be some mismatch
-    if(strcmp(phase,'zirc'))
-        S238=16.97;
-        S235=19.64;
-        S232=19.32;
-    elseif(strcmp(phase,'ap'))
-        S238=18.81;
-        S235=21.80;
-        S232=22.25;
-    else
-        S238=NaN;
-        S235=NaN;
-        S232=NaN;
-    end
+    %alpha stopping distances in microns, from Hourigan et al., 2005
+    S238=16.97;
+    S235=19.64;
+    S232=19.32;
     
     rStep=radius/nodes;
     

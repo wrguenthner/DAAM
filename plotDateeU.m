@@ -1,4 +1,4 @@
-function [ dateeU_fig,top,bottom,plotMatrix ] = plotDateeU( dateeU,plot_type,tT_in )
+function [ dateeU_fig,top,bottom,plotMatrix ] = plotDateeU( dateeU,plot_type,tT_in,obs_data )
 %plotDateeU Plots a series of date eU correlations & corresponding tT paths
 %   input is a dateeU matrix with date in one column, eU in other column
 %   and tT paths with time in one column, temperature in the other. Intent
@@ -18,8 +18,8 @@ counter=zeros(howMany,1);
 keepTrack=zeros(2,1);
 plotMatrix=zeros(length(unique(dateeU(:,2))),1);
 
-%color_options=magma(howMany);
-color_options=viridis(howMany);
+color_options=magma(howMany);
+%color_options=viridis(howMany);
 
 if(plot_type=='grain_size')
     for i=1:howMany
@@ -78,25 +78,48 @@ if(plot_type=='grain_size')
     bottom.TickDir='out';
     top.TickDir='out';
     
+    
     hold(top, 'on')
     hold(bottom, 'on')
+    axis(top,[0 1500 0 200])
+    axis(bottom, [0 1700 0 600])
+    top.XAxis.LineWidth=1;
+    top.YAxis.LineWidth=1;
+    bottom.XAxis.LineWidth=1;
+    bottom.YAxis.LineWidth=1;
+    set(bottom,'XTick',0:200:1700)
+    set(bottom, 'YTick',0:100:600)
+    set(top,'XTick',0:250:2000)
+    set(top, 'YTick',0:25:200)
+    sz=25;
+    if(obs_data~=0)
+        err=2*obs_data(:,2);
+        s=scatter(top,obs_data(:,3),obs_data(:,1),sz,'filled');
+        s.MarkerFaceColor='r';
+        s.MarkerEdgeColor='k';
+        errorbar(top,obs_data(:,3), obs_data(:,1), err,'CapSize',0, 'LineStyle','none');
+    end
     
     for j=1:howMany
         if(counter(j,1)==3)
-            plot(top,plotMatrix(:,position),plotMatrix(:,position+1),...
+            p=plot(top,plotMatrix(:,position),plotMatrix(:,position+1),...
                 plotMatrix(:,position+2),plotMatrix(:,position+3),'--',...
-                plotMatrix(:,position+4),plotMatrix(:,position+5),'--')
+                plotMatrix(:,position+4),plotMatrix(:,position+5),'--','LineWidth',1);
+            set(p,'Color',color_options(j,:))
             position=position+6;
         elseif(counter(j,1)==2)
-            plot(top,plotMatrix(:,position),plotMatrix(:,position+1),...
-                plotMatrix(:,position+2),plotMatrix(:,position+3),'--')
+            p=plot(top,plotMatrix(:,position),plotMatrix(:,position+1),...
+                plotMatrix(:,position+2),plotMatrix(:,position+3),'--','LineWidth',1);
+            set(p,'Color',color_options(j,:))
             position=position+4;
         else
-            plot(top,plotMatrix(:,position),plotMatrix(:,position+1))
+            p=plot(top,plotMatrix(:,position),plotMatrix(:,position+1),'LineWidth',1);
+            set(p,'Color',color_options(j,:))
             position=position+2;
         end
         lastTime=find(tT_in(:,j*3-2),1,'last');
-        plot(bottom,tT_in(1:lastTime,j*3-2),tT_in(1:lastTime,j*3-1))
+        p=plot(bottom,tT_in(1:lastTime,j*3-2),tT_in(1:lastTime,j*3-1),'LineWidth',1);
+        set(p,'Color',color_options(j,:))
     end
     
     hold(top, 'off')
@@ -137,7 +160,6 @@ elseif(plot_type=='model_comp')
         end
         
     end
-end
     
     dateeU_fig=figure;
     top=subplot(2,1,1);
@@ -152,36 +174,54 @@ end
     bottom.YDir='reverse';
     bottom.TickDir='out';
     top.TickDir='out';
-    set(top,'FontSize',10)
-    set(bottom,'FontSize',10)
+    
    
     hold(top, 'on')
     hold(bottom, 'on')
+    axis(top,[0 2500 0 250])
+    axis(bottom, [0 1400 0 800])
+    top.XAxis.LineWidth=1;
+    top.YAxis.LineWidth=1;
+    bottom.XAxis.LineWidth=1;
+    bottom.YAxis.LineWidth=1;
+    set(bottom,'XTick',0:200:1400)
+    set(bottom, 'YTick',0:200:800)
+    set(top,'XTick',0:500:2500)
+    set(top, 'YTick',0:50:250)
+    sz=40;
+    if(obs_data~=0)
+        err=obs_data(:,2);
+        s=scatter(top,obs_data(:,3),obs_data(:,1),sz,'d','filled');
+        s.MarkerFaceColor='b';
+        errorbar(top,obs_data(:,3), obs_data(:,1), err,'CapSize',0, 'LineStyle','none');
+    end
     
     for j=1:howMany
         if(counter(j,1)==3)
             p=plot(top,plotMatrix(:,position),plotMatrix(:,position+1),...
                 plotMatrix(:,position+2),plotMatrix(:,position+3),'--',...
-                plotMatrix(:,position+4),plotMatrix(:,position+5),':');
+                plotMatrix(:,position+4),plotMatrix(:,position+5),':','LineWidth',1);
             set(p,'Color',color_options(j,:))
             position=position+6;
         elseif(counter(j,1)==2)
             p=plot(top,plotMatrix(:,position),plotMatrix(:,position+1),...
-                plotMatrix(:,position+2),plotMatrix(:,position+3),'--');
+                plotMatrix(:,position+2),plotMatrix(:,position+3),'--','LineWidth',1);
             set(p,'Color',color_options(j,:))
             position=position+4;
         else
-            p=plot(top,plotMatrix(:,position),plotMatrix(:,position+1));
+            p=plot(top,plotMatrix(:,position),plotMatrix(:,position+1),'LineWidth',1);
             set(p,'Color',color_options(j,:))
             position=position+2;
         end
         lastTime=find(tT_in(:,j*3-2),1,'last');
-        p=plot(bottom,tT_in(1:lastTime,j*3-2),tT_in(1:lastTime,j*3-1));
+        p=plot(bottom,tT_in(1:lastTime,j*3-2),tT_in(1:lastTime,j*3-1),'LineWidth',1);
         set(p,'Color',color_options(j,:))
     end
     
     hold(top, 'off')
     hold(bottom, 'off')
+    
+end
 
 
 end
