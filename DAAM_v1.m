@@ -84,7 +84,7 @@ if(NumGrains==size(concen,1))
     data(:,1)=concen(:,1);
     data(:,2)=concen(:,2);
     data(:,3)=concen(:,3);
-    data(:,4)=concen(:,4);%{meanGrain}; %concen(:,4);
+    data(:,4)={meanGrain}; 
   
     if(isGinster)
         data(:,5)={'Ginster'};
@@ -98,7 +98,7 @@ elseif(NumGrains==size(concen,1)*2)
     data(:,1)=[concen(:,1); concen(:,1)];
     data(:,2)=[concen(:,2); concen(:,2)];
     data(:,3)=[concen(:,3); concen(:,3)];
-    data(:,4)=[concen(:,4); concen(:,4)];%{meanGrain}; %[concen(:,4); concen(:,4)];
+    data(:,4)={meanGrain}; 
     
     if(isGinster && isGuenthner)
         data(1:size(concen,1),5)={'Guenthner'};

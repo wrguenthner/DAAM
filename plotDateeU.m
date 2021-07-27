@@ -18,6 +18,31 @@ counter=zeros(howMany,1);
 keepTrack=zeros(2,1);
 plotMatrix=zeros(length(unique(dateeU(:,2))),1);
 
+%sizing parameters for the plots
+max_dateeU = max(dateeU);
+max_date = max_dateeU(1,1);
+for i=1:3:size(max_dateeU)
+    if(max_dateeU(1,i)>max_date)
+        max_date = max_dateeU(1,i);
+    end
+end
+
+max_time_temp = max(tT_in);
+max_time = max_time_temp(1,1);
+max_temp = max_time_temp(1,2);
+for i=1:3:size(tT_in)
+    if(max_time_temp(1,i)>max_time)
+        max_time = max_time_temp(1,i);
+    end
+    
+    if(max_time_temp(1,i+1)>max_temp)
+        max_temp = max_time_temp(1,i+1);
+    end
+end
+
+top_axis_size = [0 max_dateeU(1,2) 0 max_date];
+bottom_axis_size = [0 max_time 0 max_temp];
+
 color_options=magma(howMany);
 %color_options=viridis(howMany);
 
@@ -81,16 +106,16 @@ if(plot_type=='grain_size')
     
     hold(top, 'on')
     hold(bottom, 'on')
-    axis(top,[0 1500 0 200])
-    axis(bottom, [0 1700 0 600])
+    axis(top,top_axis_size)
+    axis(bottom, bottom_axis_size)
     top.XAxis.LineWidth=1;
     top.YAxis.LineWidth=1;
     bottom.XAxis.LineWidth=1;
     bottom.YAxis.LineWidth=1;
-    set(bottom,'XTick',0:200:1700)
-    set(bottom, 'YTick',0:100:600)
-    set(top,'XTick',0:250:2000)
-    set(top, 'YTick',0:25:200)
+    set(bottom,'XTick',0:bottom_axis_size(1,2)/10:bottom_axis_size(1,2))
+    set(bottom, 'YTick',0:bottom_axis_size(1,4)/10:bottom_axis_size(1,4))
+    set(top,'XTick',0:top_axis_size(1,2)/10:top_axis_size(1,2))
+    set(top, 'YTick',0:top_axis_size(1,4)/10:top_axis_size(1,4))
     sz=25;
     if(obs_data~=0)
         err=2*obs_data(:,2);
@@ -178,16 +203,16 @@ elseif(plot_type=='model_comp')
    
     hold(top, 'on')
     hold(bottom, 'on')
-    axis(top,[0 2500 0 250])
-    axis(bottom, [0 1400 0 800])
+    axis(top,top_axis_size)
+    axis(bottom, bottom_axis_size)
     top.XAxis.LineWidth=1;
     top.YAxis.LineWidth=1;
     bottom.XAxis.LineWidth=1;
     bottom.YAxis.LineWidth=1;
-    set(bottom,'XTick',0:200:1400)
-    set(bottom, 'YTick',0:200:800)
-    set(top,'XTick',0:500:2500)
-    set(top, 'YTick',0:50:250)
+    set(bottom,'XTick',0:bottom_axis_size(1,2)/10:bottom_axis_size(1,2))
+    set(bottom, 'YTick',0:bottom_axis_size(1,4)/10:bottom_axis_size(1,4))
+    set(top,'XTick',0:top_axis_size(1,2)/10:top_axis_size(1,2))
+    set(top, 'YTick',0:top_axis_size(1,4)/10:top_axis_size(1,4))
     sz=40;
     if(obs_data~=0)
         err=obs_data(:,2);
