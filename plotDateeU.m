@@ -19,8 +19,10 @@ keepTrack=zeros(2,1);
 plotMatrix=zeros(length(unique(dateeU(:,2))),1);
 
 %sizing parameters for the plots
+
 max_dateeU = max(dateeU);
 max_date = max_dateeU(1,1);
+max_eU = max_dateeU(1,2);
 for i=1:3:size(max_dateeU)
     if(max_dateeU(1,i)>max_date)
         max_date = max_dateeU(1,i);
@@ -30,17 +32,25 @@ end
 max_time_temp = max(tT_in);
 max_time = max_time_temp(1,1);
 max_temp = max_time_temp(1,2);
-for i=1:3:size(tT_in)
-    if(max_time_temp(1,i)>max_time)
-        max_time = max_time_temp(1,i);
-    end
+if(numel(max_time_temp)>2)
+    for i=1:3:size(tT_in)
+        if(max_time_temp(1,i)>max_time)
+            max_time = max_time_temp(1,i);
+        end
     
-    if(max_time_temp(1,i+1)>max_temp)
-        max_temp = max_time_temp(1,i+1);
+        if(max_time_temp(1,i+1)>max_temp)
+            max_temp = max_time_temp(1,i+1);
+        end
     end
 end
 
-top_axis_size = [0 max_dateeU(1,2) 0 max_date];
+%round up to the nearest 10
+max_eU = ceil(max_eU/10)*10;
+max_date = ceil(max_date/10)*10;
+max_time = ceil(max_time/10)*10;
+max_temp = ceil(max_temp/10)*10;
+
+top_axis_size = [0 max_eU 0 max_date];
 bottom_axis_size = [0 max_time 0 max_temp];
 
 color_options=magma(howMany);

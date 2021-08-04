@@ -32,14 +32,16 @@ function [damage] = Flowers2009(steps,tT)
               teq=exp(C2+(log(1/temp)-C3)*(((1/r)-1)^alpha-C0)/C1);
           end
       end
-      
-      
-    %rmr0 conversion
-    damage(:,:)=((damage(:,:)-rmr0)/(1-rmr0)).^kappa;
     
-    %density conversion (rhor)
+    %rmr0 and density conversion (rhor)
     for tsNode=steps-1:-1:1
         for node=tsNode:-1:1
+            if(damage(tsNode,node)>=rmr0)
+                damage(tsNode,node)=((damage(tsNode,node)-rmr0)/(1-rmr0)).^kappa;
+            else
+                damage(tsNode,node)=0;
+            end
+            
             if(damage(tsNode,node)>=0.765)
                 damage(tsNode,node)=1.6*damage(tsNode,node)-0.6;
             else

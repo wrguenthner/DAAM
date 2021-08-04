@@ -33,108 +33,172 @@ EsubTrap=34; %kJ/mol
 etaq=0.91; %Durango
 L=0.000815; %cm, half the total etchable fission-track length
 
-%get file information, eventually I want to just make this into a dialog
-%box... tree structure?
-concen=input('Input phase and concentration file>');
-obs_data=input('Input measured data file (if none, enter 0)>');
-compType=input('Input 1 for running a model comparison test, 2 for grain size comparison>');
-NumGrains=0;
 isGuenthner=false;
 isGinster=false;
 isnoAnneal=false;
 
+%get file information, eventually I want to just make this into a dialog
+%box
+concen=input('Input concentration file>');
+phase_input=input('Which phase are you running? Enter "ap" for apatite, "zirc" for zircon>');
+if(phase_input=="ap")
+    obs_data=input('Input measured data file (if none, enter 0)>');
+    compType=2;
+elseif(phase_input=="zirc")
+    obs_data=input('Input measured data file (if none, enter 0)>');
+    compType=input('Input 1 for running a model comparison test, 2 for grain size comparison>');
+else
+    disp('You must enter either "ap" or "zirc"!')
+    return
+end
+
+NumGrains=0;
+
 if(compType==1)
     meanGrain=input('What is the grain size (in microns)?>');
+    if(meanGrain<=0)
+        disp('You must pick a grain size greater than 0!')
+        return
+    end
     annealGuenthner=input('Do you want to run the Guenthner et al. 2013 annealing model? 1 for yes>');
     annealGinster=input('Do you want to run the Ginster et al., 2019 annealing model? 1 for yes>');
     noAnneal=input('Do you want to run a model with no annealing? 1 for yes>');
+    anneal_model_counter=0;
     if(annealGuenthner==1) 
         NumGrains=NumGrains+size(concen,1);
         isGuenthner=true;
+        anneal_model_counter=anneal_model_counter+1;
     end
     
     if(annealGinster==1)
         NumGrains=NumGrains+size(concen,1);
         isGinster=true;
+        anneal_model_counter=anneal_model_counter+1;
     end
     
     if(noAnneal==1)
         NumGrains=NumGrains+size(concen,1);
         isnoAnneal=true;
+        anneal_model_counter=anneal_model_counter+1;
     end
+    
+    if(anneal_model_counter<=1)
+        disp('You must enter at least two annealing models!')
+        return
+    end
+    
+    model_parameters=cell(NumGrains,5);
+    if(NumGrains==size(concen,1)*2)
+        model_parameters(:,1)={"zirc"};
+        model_parameters(:,2)=num2cell([concen(:,1); concen(:,1)]);
+        model_parameters(:,3)=num2cell([concen(:,2); concen(:,2)]);
+        model_parameters(:,4)={meanGrain}; 
+    
+        if(isGinster && isGuenthner)
+            model_parameters(1:size(concen,1),5)={'Guenthner'};
+            model_parameters(size(concen,1)+1:end,5)={'Ginster'};
+        elseif(isGinster && isnoAnneal)
+            model_parameters(1:size(concen,1),5)={'Ginster'};
+            model_parameters(size(concen,1)+1:end,5)={'none'};
+        else
+            model_parameters(1:size(concen,1),5)={'Guenthner'};
+            model_parameters(size(concen,1)+1:end,5)={'none'};
+        end
+    
+    else
+        model_parameters(:,1)={"zirc"};
+        model_parameters(:,2)=num2cell([concen(:,1); concen(:,1); concen(:,1)]);
+        model_parameters(:,3)=num2cell([concen(:,2); concen(:,2); concen(:,2)]);
+    
+        if(compType==1)
+            model_parameters(1:end,4)={meanGrain};
+            model_parameters(1:size(concen,1),5)={'Guenthner'};
+            model_parameters(size(concen,1)+1:size(concen,1)*2,5)={'Ginster'};
+            model_parameters(size(concen,1)*2+1:end,5)={'none'};
+        else
+            model_parameters(1:size(concen,1),4)={meanGrain};
+            model_parameters(size(concen,1)+1:size(concen,1)*2,4)={meanGrain+stdGrain};
+            model_parameters(size(concen,1)*2+1:end,4)={meanGrain-stdGrain};
+            if(modelType==1)
+                model_parameters(:,5)={'Guenthner'};
+            elseif(modelType==2)
+                model_parameters(:,5)={'Ginster'};
+            else
+                model_parameters(:,5)={'none'};
+            end
+        end
+    
+    end
+    
     plotType='model_comp';
-else
-  if(obs_data~=0)
-    meanGrain=mean(obs_data(:,4));
-    stdGrain=std(obs_data(:,4));
-  end
+elseif(compType==2)
+    if(obs_data~=0)
+        meanGrain=mean(obs_data(:,4));
+        stdGrain=std(obs_data(:,4));
+    else
+        meanGrain=input('What is the mean grain size (in microns)?>');
+        stdGrain=input('What is the standard deviation in grain size (in microns)?>');
+        if(meanGrain<=0 || meanGrain-stdGrain<=0)
+            disp('You cannot have any grain sizes less than 0!')
+            return
+        end
+    end
     NumGrains=size(concen,1);
     if(stdGrain>0)
         NumGrains=NumGrains*3;
     end
-    modelType=input('What annealing model do you want? 0=no annealing, 1=Guenthner et al. 2013, 2=Ginster et al. 2019>');
+    
+    model_parameters=cell(NumGrains,5);
+    if(phase_input=="zirc")
+        modelType=input('What annealing model do you want? 0=no annealing, 1=Guenthner et al. 2013, 2=Ginster et al. 2019>');
+        model_parameters(:,1)={"zirc"};
+        if(stdGrain>0)
+            model_parameters(:,2)=num2cell([concen(:,1); concen(:,1); concen(:,1)]);
+            model_parameters(:,3)=num2cell([concen(:,2); concen(:,2); concen(:,2)]);
+            model_parameters(1:size(concen,1),4)={meanGrain};
+            model_parameters(size(concen,1)+1:size(concen,1)*2,4)={meanGrain+stdGrain};
+            model_parameters(size(concen,1)*2+1:end,4)={meanGrain-stdGrain};
+        else
+            model_parameters(:,2)=num2cell(concen(:,1));
+            model_parameters(:,3)=num2cell(concen(:,2));
+            model_parameters(:,4)={meanGrain};
+        end
+        
+        if(modelType==2)
+            model_parameters(:,5)={'Ginster'};
+        elseif(modelType==1)
+            model_parameters(:,5)={'Guenthner'};
+        elseif(modelType==0)
+            model_parameters(:,5)={'none'};
+        else
+            disp('You must pick a valid annealing model!')
+            return
+        end
+    end
+    
+    if(phase_input=="ap")
+        model_parameters(:,1)={"ap"};
+        if(stdGrain>0)
+            model_parameters(:,2)=num2cell([concen(:,1); concen(:,1); concen(:,1)]);
+            model_parameters(:,3)=num2cell([concen(:,2); concen(:,2); concen(:,2)]);
+            model_parameters(1:size(concen,1),4)={meanGrain};
+            model_parameters(size(concen,1)+1:size(concen,1)*2,4)={meanGrain+stdGrain};
+            model_parameters(size(concen,1)*2+1:end,4)={meanGrain-stdGrain};
+        else
+            model_parameters(:,2)=num2cell(concen(:,1));
+            model_parameters(:,3)=num2cell(concen(:,2));
+            model_parameters(:,4)={meanGrain};
+        end
+        model_parameters(:,5)={'Flowers'};
+    end
     plotType='grain_size';
+else
+    disp('You must pick a valid comparison type!')
+    return
 end
 
 temp_tT=input('Input time-temperature matrix>');
 tic
-
-data=cell(NumGrains,5);
-if(NumGrains==size(concen,1))
-    data(:,1)=concen(:,1);
-    data(:,2)=concen(:,2);
-    data(:,3)=concen(:,3);
-    data(:,4)={meanGrain}; 
-  
-    if(isGinster)
-        data(:,5)={'Ginster'};
-    elseif(isGuenthner)
-        data(:,5)={'Guenthner'};
-    else
-        data(:,5)={'none'};
-    end
-    
-elseif(NumGrains==size(concen,1)*2)
-    data(:,1)=[concen(:,1); concen(:,1)];
-    data(:,2)=[concen(:,2); concen(:,2)];
-    data(:,3)=[concen(:,3); concen(:,3)];
-    data(:,4)={meanGrain}; 
-    
-    if(isGinster && isGuenthner)
-        data(1:size(concen,1),5)={'Guenthner'};
-        data(size(concen,1)+1:end,5)={'Ginster'};
-    elseif(isGinster && isnoAnneal)
-        data(1:size(concen,1),5)={'Ginster'};
-        data(size(concen,1)+1:end,5)={'none'};
-    else
-        data(1:size(concen,1),5)={'Guenthner'};
-        data(size(concen,1)+1:end,5)={'none'};
-    end
-    
-else
-    data(:,1)=[concen(:,1); concen(:,1); concen(:,1)];
-    data(:,2)=[concen(:,2); concen(:,2); concen(:,2)];
-    data(:,3)=[concen(:,3); concen(:,3); concen(:,3)];
-    
-    if(compType==1)
-        data(1:end,4)={meanGrain};
-        data(1:size(concen,1),5)={'Guenthner'};
-        data(size(concen,1)+1:size(concen,1)*2,5)={'Ginster'};
-        data(size(concen,1)*2+1:end,5)={'none'};
-    else
-        data(1:size(concen,1),4)={meanGrain};
-        data(size(concen,1)+1:size(concen,1)*2,4)={meanGrain+stdGrain};
-        data(size(concen,1)*2+1:end,4)={meanGrain-stdGrain};
-        if(modelType==1)
-            data(:,5)={'Guenthner'};
-        elseif(modelType==2)
-            data(:,5)={'Ginster'};
-        else
-            data(:,5)={'none'};
-        end
-    end
-    
-end
 
 
 tTsize=size(temp_tT,2);
@@ -143,11 +207,11 @@ howMany=(tTsize+1)/3;
 %set some variables and allocate space for matrices used throughout
 nodes=513;
 dateeU=zeros(NumGrains,3);
-masterDateeU=zeros(NumGrains,3*howMany);
-masterIndex=1;
+output_date_eU=zeros(NumGrains,3*howMany);
+main_index=1;
 
-for master=1:howMany
-    if (master==1)
+for each_grain=1:howMany
+    if (each_grain==1)
         for index=2:size(temp_tT,1)
             if (temp_tT(index,1)~=0)
                 location=index;
@@ -160,15 +224,15 @@ for master=1:howMany
         tTInput(:,2)=temp_tT(1:location,2);
     else
         for index=2:size(temp_tT,1)
-            if (temp_tT(index,1+((master-1)*3))~=0)
+            if (temp_tT(index,1+((each_grain-1)*3))~=0)
                 location=index;
             else
                 break
             end
         end
         tTInput=zeros(location,2);
-        tTInput(:,1)=temp_tT(1:location,1+((master-1)*3));
-        tTInput(:,2)=temp_tT(1:location,2+((master-1)*3));
+        tTInput(:,1)=temp_tT(1:location,1+((each_grain-1)*3));
+        tTInput(:,2)=temp_tT(1:location,2+((each_grain-1)*3));
     end
     
 %create tT path with tT path interpolater
@@ -191,7 +255,7 @@ compareDam=zeros(steps,NumGrains);
 %Flowers has more than one instance)
 Guenthner=0;
 Flowers=0;
-modelName=data(:,5);
+modelName=model_parameters(:,5);
 for i=1:size(modelName,1)
     if(strcmp(modelName{i,1},'Guenthner'))
         Guenthner=Guenthner+1;
@@ -210,12 +274,12 @@ end
    
 
 for i=1:NumGrains
-    phase=data{i,1};
-    annealModel=data{i,5};
-    Uppm=data{i,2};    
-    Thppm=data{i,3};
+    phase=model_parameters{i,1};
+    annealModel=model_parameters{i,5};
+    Uppm=model_parameters{i,2};    
+    Thppm=model_parameters{i,3};
     eU=Uppm+.235*Thppm;
-    radius=data{i,4}; %microns
+    radius=model_parameters{i,4}; %microns
     U235atom=((Uppm/1000000)*.007204/238.02891)*(6.02214179E23); %atoms/g
 	U238atom=((Uppm/1000000)*.992745/238.02891)*(6.02214179E23); %atoms/g
 	Thatom=((Thppm/1000000)/232.03805)*(6.02214179E23); %atoms/g  
@@ -319,11 +383,11 @@ for i=1:NumGrains
    
 end
 
-masterDateeU(:,masterIndex:masterIndex+2)=dateeU(:,:);
-masterIndex=master*3+1;
+output_date_eU(:,main_index:main_index+2)=dateeU(:,:);
+main_index=each_grain*3+1;
 
 end
 
-[dateeU_fig,top,bottom,plotMatrix]=plotDateeU(masterDateeU,plotType,temp_tT,obs_data);
+[dateeU_fig,top,bottom,plotMatrix]=plotDateeU(output_date_eU,plotType,temp_tT,obs_data);
 
 toc
