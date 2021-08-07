@@ -198,7 +198,6 @@ else
 end
 
 temp_tT=input('Input time-temperature matrix>');
-tic
 
 
 tTsize=size(temp_tT,2);
@@ -389,5 +388,3 @@ main_index=each_grain*3+1;
 end
 
 [dateeU_fig,top,bottom,plotMatrix]=plotDateeU(output_date_eU,plotType,temp_tT,obs_data);
-
-toc

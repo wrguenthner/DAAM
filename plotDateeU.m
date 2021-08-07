@@ -19,7 +19,8 @@ keepTrack=zeros(2,1);
 plotMatrix=zeros(length(unique(dateeU(:,2))),1);
 
 %sizing parameters for the plots
-
+%commented out code below does this automatically
+%{
 max_dateeU = max(dateeU);
 max_date = max_dateeU(1,1);
 max_eU = max_dateeU(1,2);
@@ -43,6 +44,12 @@ if(numel(max_time_temp)>2)
         end
     end
 end
+%}
+
+max_eU = input('Enter maximum eU for the date-eU plot>');
+max_date = input('Enter maximum date for the date-eU plot>');
+max_time = input('Enter maximum time for the t-T plot>');
+max_temp = input('Enter maximum temp for the t-T plot>');
 
 %round up to the nearest 10
 max_eU = ceil(max_eU/10)*10;
